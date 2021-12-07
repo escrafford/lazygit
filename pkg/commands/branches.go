@@ -10,7 +10,7 @@ import (
 
 // NewBranch create new branch
 func (c *GitCommand) NewBranch(name string, base string) error {
-	return c.RunCommand("git checkout -b %s %s", c.OSCommand.Quote(name), c.OSCommand.Quote(base))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git checkout -b %s %s", c.OSCommand.Quote(name), c.OSCommand.Quote(base))))
 }
 
 // CurrentBranchName get the current branch name and displayname.
@@ -92,11 +92,11 @@ func (c *GitCommand) GetBranchGraphCmdStr(branchName string) string {
 }
 
 func (c *GitCommand) SetUpstreamBranch(upstream string) error {
-	return c.RunCommand("git branch -u %s", c.OSCommand.Quote(upstream))
+	return c.RunCommandObj(c.NewCmdObjFromStr("git branch -u " + c.OSCommand.Quote(upstream)))
 }
 
 func (c *GitCommand) SetBranchUpstream(remoteName string, remoteBranchName string, branchName string) error {
-	return c.RunCommand("git branch --set-upstream-to=%s/%s %s", c.OSCommand.Quote(remoteName), c.OSCommand.Quote(remoteBranchName), c.OSCommand.Quote(branchName))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git branch --set-upstream-to=%s/%s %s", c.OSCommand.Quote(remoteName), c.OSCommand.Quote(remoteBranchName), c.OSCommand.Quote(branchName))))
 }
 
 func (c *GitCommand) GetCurrentBranchUpstreamDifferenceCount() (string, string) {
@@ -140,28 +140,28 @@ func (c *GitCommand) Merge(branchName string, opts MergeOpts) error {
 
 // AbortMerge abort merge
 func (c *GitCommand) AbortMerge() error {
-	return c.RunCommand("git merge --abort")
+	return c.RunCommandObj(c.NewCmdObjFromStr("git merge --abort"))
 }
 
 func (c *GitCommand) IsHeadDetached() bool {
-	err := c.RunCommand("git symbolic-ref -q HEAD")
+	err := c.RunCommandObj(c.NewCmdObjFromStr("git symbolic-ref -q HEAD"))
 	return err != nil
 }
 
 // ResetHardHead runs `git reset --hard`
 func (c *GitCommand) ResetHard(ref string) error {
-	return c.RunCommand("git reset --hard " + c.OSCommand.Quote(ref))
+	return c.RunCommandObj(c.NewCmdObjFromStr("git reset --hard " + c.OSCommand.Quote(ref)))
 }
 
 // ResetSoft runs `git reset --soft HEAD`
 func (c *GitCommand) ResetSoft(ref string) error {
-	return c.RunCommand("git reset --soft " + c.OSCommand.Quote(ref))
+	return c.RunCommandObj(c.NewCmdObjFromStr("git reset --soft " + c.OSCommand.Quote(ref)))
 }
 
 func (c *GitCommand) ResetMixed(ref string) error {
-	return c.RunCommand("git reset --mixed " + c.OSCommand.Quote(ref))
+	return c.RunCommandObj(c.NewCmdObjFromStr("git reset --mixed " + c.OSCommand.Quote(ref)))
 }
 
 func (c *GitCommand) RenameBranch(oldName string, newName string) error {
-	return c.RunCommand("git branch --move %s %s", c.OSCommand.Quote(oldName), c.OSCommand.Quote(newName))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git branch --move %s %s", c.OSCommand.Quote(oldName), c.OSCommand.Quote(newName))))
 }

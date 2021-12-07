@@ -9,7 +9,7 @@ import (
 
 // RenameCommit renames the topmost commit with the given name
 func (c *GitCommand) RenameCommit(name string) error {
-	return c.RunCommand("git commit --allow-empty --amend --only -m %s", c.OSCommand.Quote(name))
+	return c.RunCommandObj(c.NewCmdObjFromStr("git commit --allow-empty --amend --only -m " + c.OSCommand.Quote(name)))
 }
 
 // ResetToCommit reset to commit
@@ -76,11 +76,11 @@ func (c *GitCommand) ShowCmdStr(sha string, filterPath string) string {
 
 // Revert reverts the selected commit by sha
 func (c *GitCommand) Revert(sha string) error {
-	return c.RunCommand("git revert %s", sha)
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git revert %s", sha)))
 }
 
 func (c *GitCommand) RevertMerge(sha string, parentNumber int) error {
-	return c.RunCommand("git revert %s -m %d", sha, parentNumber)
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git revert %s -m %d", sha, parentNumber)))
 }
 
 // CherryPickCommits begins an interactive rebase with the given shas being cherry picked onto HEAD
@@ -100,5 +100,5 @@ func (c *GitCommand) CherryPickCommits(commits []*models.Commit) error {
 
 // CreateFixupCommit creates a commit that fixes up a previous commit
 func (c *GitCommand) CreateFixupCommit(sha string) error {
-	return c.RunCommand("git commit --fixup=%s", sha)
+	return c.RunCommandObj(c.NewCmdObjFromStr("git commit --fixup=" + sha))
 }

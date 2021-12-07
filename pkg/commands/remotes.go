@@ -7,19 +7,19 @@ import (
 )
 
 func (c *GitCommand) AddRemote(name string, url string) error {
-	return c.RunCommand("git remote add %s %s", c.OSCommand.Quote(name), c.OSCommand.Quote(url))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git remote add %s %s", c.OSCommand.Quote(name), c.OSCommand.Quote(url))))
 }
 
 func (c *GitCommand) RemoveRemote(name string) error {
-	return c.RunCommand("git remote remove %s", c.OSCommand.Quote(name))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git remote remove %s", c.OSCommand.Quote(name))))
 }
 
 func (c *GitCommand) RenameRemote(oldRemoteName string, newRemoteName string) error {
-	return c.RunCommand("git remote rename %s %s", c.OSCommand.Quote(oldRemoteName), c.OSCommand.Quote(newRemoteName))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git remote rename %s %s", c.OSCommand.Quote(oldRemoteName), c.OSCommand.Quote(newRemoteName))))
 }
 
 func (c *GitCommand) UpdateRemoteUrl(remoteName string, updatedUrl string) error {
-	return c.RunCommand("git remote set-url %s %s", c.OSCommand.Quote(remoteName), c.OSCommand.Quote(updatedUrl))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git remote set-url %s %s", c.OSCommand.Quote(remoteName), c.OSCommand.Quote(updatedUrl))))
 }
 
 func (c *GitCommand) DeleteRemoteBranch(remoteName string, branchName string, promptUserForCredential func(string) string) error {

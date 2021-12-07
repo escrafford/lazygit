@@ -5,11 +5,11 @@ import (
 )
 
 func (c *GitCommand) CreateLightweightTag(tagName string, commitSha string) error {
-	return c.RunCommand("git tag -- %s %s", c.OSCommand.Quote(tagName), commitSha)
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git tag -- %s %s", c.OSCommand.Quote(tagName), commitSha)))
 }
 
 func (c *GitCommand) DeleteTag(tagName string) error {
-	return c.RunCommand("git tag -d %s", c.OSCommand.Quote(tagName))
+	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git tag -d %s", c.OSCommand.Quote(tagName))))
 }
 
 func (c *GitCommand) PushTag(remoteName string, tagName string, promptUserForCredential func(string) string) error {

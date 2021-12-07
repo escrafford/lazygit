@@ -231,6 +231,15 @@ func (c *GitCommand) RunCommand(formatString string, formatArgs ...interface{}) 
 	return err
 }
 
+func (c *GitCommand) RunCommandObj(cmdObj oscommands.ICmdObj) error {
+	_, err := c.RunCommandObjWithOutput(cmdObj)
+	return err
+}
+
+func (c *GitCommand) RunCommandObjWithOutput(cmdObj oscommands.ICmdObj) (string, error) {
+	return c.RunCommandWithOutput(cmdObj.ToString())
+}
+
 func (c *GitCommand) RunCommandWithOutput(formatString string, formatArgs ...interface{}) (string, error) {
 	// TODO: have this retry logic in other places we run the command
 	waitTime := 50 * time.Millisecond

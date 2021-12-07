@@ -454,7 +454,7 @@ func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...inte
 }
 
 func (c *OSCommand) RunCommandObj(cmdObj ICmdObj) error {
-	return c.RunCommand(cmdObj.ToString())
+	return c.RunCommandObj(c.NewCmdObjFromStr(cmdObj.ToString()))
 }
 
 func (c *OSCommand) RunCommandObjWithOutput(cmdObj ICmdObj) (string, error) {
