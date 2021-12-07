@@ -271,7 +271,7 @@ func (c *GitCommand) GenericMergeOrRebaseAction(commandType string, command stri
 }
 
 func (c *GitCommand) runSkipEditorCommand(command string) error {
-	cmdObj := c.OSCommand.ExecutableFromString(command)
+	cmdObj := c.OSCommand.NewCmdObjFromStr(command)
 	lazyGitPath := c.OSCommand.GetLazygitPath()
 	cmdObj.AddEnvVars(
 		"LAZYGIT_CLIENT_COMMAND=EXIT_IMMEDIATELY",

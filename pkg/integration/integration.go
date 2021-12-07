@@ -216,11 +216,10 @@ func GetRootDirectory() string {
 }
 
 func createFixture(testPath, actualDir string) error {
-	osCommand := oscommands.NewDummyOSCommand()
 	bashScriptPath := filepath.Join(testPath, "setup.sh")
 	cmd := secureexec.Command("bash", bashScriptPath, actualDir)
 
-	if err := osCommand.RunExecutable(cmd); err != nil {
+	if _, err := cmd.CombinedOutput(); err != nil {
 		return err
 	}
 
@@ -429,7 +428,7 @@ func getLazygitCommand(testPath string, rootDir string, record bool, speed float
 
 	cmdStr := fmt.Sprintf("%s -debug --use-config-dir=%s --path=%s %s", tempLazygitPath(), configDir, actualDir, extraCmdArgs)
 
-	cmdObj := osCommand.ExecutableFromString(cmdStr)
+	cmdObj := osCommand.NewCmdObjFromStr(cmdStr)
 	cmdObj.AddEnvVars(fmt.Sprintf("SPEED=%f", speed))
 
 	if record {

@@ -261,6 +261,6 @@ func (c *GitCommand) NewCmdObjFromStr(cmdStr string) oscommands.ICmdObj {
 
 func (c *GitCommand) NewCmdObjFromStrWithLog(cmdStr string) oscommands.ICmdObj {
 	cmdObj := c.NewCmdObjFromStr(cmdStr)
-	c.OSCommand.LogExecCmd(cmdObj.GetCmd())
+	c.OSCommand.LogCmdObj(cmdObj)
 	return cmdObj
 }

@@ -24,7 +24,7 @@ func (gui *Gui) remoteBranchesRenderToMain() error {
 	if remoteBranch == nil {
 		task = NewRenderStringTask("No branches for this remote")
 	} else {
-		cmdObj := gui.OSCommand.ExecutableFromString(
+		cmdObj := gui.OSCommand.NewCmdObjFromStr(
 			gui.GitCommand.GetBranchGraphCmdStr(remoteBranch.FullName()),
 		)
 		task = NewRunCommandTask(cmdObj.GetCmd())

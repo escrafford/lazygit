@@ -200,7 +200,7 @@ func (c *CommitListBuilder) getHydratedRebasingCommits(rebaseMode string) ([]*mo
 
 	// note that we're not filtering these as we do non-rebasing commits just because
 	// I suspect that will cause some damage
-	cmdObj := c.OSCommand.ExecutableFromString(
+	cmdObj := c.OSCommand.NewCmdObjFromStr(
 		fmt.Sprintf(
 			"git show %s --no-patch --oneline %s --abbrev=%d",
 			strings.Join(commitShas, " "),
@@ -418,7 +418,7 @@ func (c *CommitListBuilder) getLogCmd(opts GetCommitsOptions) oscommands.ICmdObj
 		allFlag = " --all"
 	}
 
-	return c.OSCommand.ExecutableFromString(
+	return c.OSCommand.NewCmdObjFromStr(
 		fmt.Sprintf(
 			"git log %s %s %s --oneline %s %s --abbrev=%d %s",
 			c.OSCommand.Quote(opts.RefName),

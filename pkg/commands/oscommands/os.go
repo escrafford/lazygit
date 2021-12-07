@@ -116,8 +116,8 @@ func (c *OSCommand) WithSpan(span string) *OSCommand {
 	return newOSCommand
 }
 
-func (c *OSCommand) LogExecCmd(cmd *exec.Cmd) {
-	c.LogCommand(strings.Join(cmd.Args, " "), true)
+func (c *OSCommand) LogCmdObj(cmdObj ICmdObj) {
+	c.LogCommand(cmdObj.ToString(), true)
 }
 
 func (c *OSCommand) LogCommand(cmdStr string, commandLine bool) {
@@ -153,7 +153,7 @@ type RunCommandOptions struct {
 
 func (c *OSCommand) RunCommandWithOutputWithOptions(command string, options RunCommandOptions) (string, error) {
 	c.LogCommand(command, true)
-	cmdObj := c.ExecutableFromString(command)
+	cmdObj := c.NewCmdObjFromStr(command)
 	cmdObj.AddEnvVars("GIT_TERMINAL_PROMPT=0") // prevents git from prompting us for input which would freeze the program
 	cmdObj.AddEnvVars(options.EnvVars...)
 
@@ -176,21 +176,13 @@ func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...inte
 	if formatArgs != nil {
 		command = fmt.Sprintf(formatString, formatArgs...)
 	}
-	cmdObj := c.ExecutableFromString(command)
+	cmdObj := c.NewCmdObjFromStr(command)
 	c.LogCommand(cmdObj.ToString(), true)
 	output, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
 	if err != nil {
 		c.Log.WithField("command", command).Error(output)
 	}
 	return output, err
-}
-
-// RunExecutable runs an executable file and returns an error if there was one
-func (c *OSCommand) RunExecutable(cmd *exec.Cmd) error {
-	c.LogExecCmd(cmd)
-	c.BeforeExecuteCmd(cmd)
-	_, err := sanitisedCommandOutput(cmd.CombinedOutput())
-	return err
 }
 
 // ShellCommandFromString takes a string like `git commit` and returns an executable shell command for it
@@ -278,11 +270,6 @@ func (c *OSCommand) OpenLink(link string) error {
 	command := utils.ResolvePlaceholderString(commandTemplate, templateValues)
 	err := c.RunShellCommand(command)
 	return err
-}
-
-// ExecutableFromString takes a string like `git status` and returns an executable command for it
-func (c *OSCommand) ExecutableFromString(commandStr string) ICmdObj {
-	return c.NewCmdObjFromStr(commandStr)
 }
 
 // PrepareShellSubProcess returns the pointer to a custom command
@@ -388,7 +375,7 @@ func (c *OSCommand) FileExists(path string) (bool, error) {
 func (c *OSCommand) RunPreparedCommand(cmdObj ICmdObj) error {
 	cmd := cmdObj.GetCmd()
 	c.BeforeExecuteCmd(cmd)
-	c.LogExecCmd(cmd)
+	c.LogCmdObj(cmdObj)
 	out, err := cmd.CombinedOutput()
 	outString := string(out)
 	c.Log.Info(outString)
@@ -419,7 +406,7 @@ func (c *OSCommand) PipeCommands(commandStrings ...string) error {
 			logCmdStr += " | "
 		}
 		logCmdStr += str
-		cmds[i] = c.ExecutableFromString(str).GetCmd()
+		cmds[i] = c.NewCmdObjFromStr(str).GetCmd()
 	}
 	c.LogCommand(logCmdStr, true)
 

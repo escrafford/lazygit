@@ -45,7 +45,7 @@ func (gui *Gui) commitFilesRenderToMain() error {
 	to := gui.State.CommitFileManager.GetParent()
 	from, reverse := gui.getFromAndReverseArgsForDiff(to)
 
-	cmdObj := gui.OSCommand.ExecutableFromString(
+	cmdObj := gui.OSCommand.NewCmdObjFromStr(
 		gui.GitCommand.ShowFileDiffCmdStr(from, to, reverse, node.GetPath(), false),
 	)
 	task := NewRunPtyTask(cmdObj.GetCmd())
