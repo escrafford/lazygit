@@ -31,11 +31,11 @@ func (gui *Gui) branchesRenderToMain() error {
 	if branch == nil {
 		task = NewRenderStringTask(gui.Tr.NoBranchesThisRepo)
 	} else {
-		cmd := gui.OSCommand.ExecutableFromString(
+		cmdObj := gui.OSCommand.ExecutableFromString(
 			gui.GitCommand.GetBranchGraphCmdStr(branch.Name),
 		)
 
-		task = NewRunPtyTask(cmd)
+		task = NewRunPtyTask(cmdObj.GetCmd())
 	}
 
 	return gui.refreshMainViews(refreshMainOpts{

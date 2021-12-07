@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -153,9 +152,9 @@ func (c *CommitListBuilder) GetCommits(opts GetCommitsOptions) ([]*models.Commit
 		passedFirstPushedCommit = true
 	}
 
-	cmd := c.getLogCmd(opts)
+	cmdObj := c.getLogCmd(opts)
 
-	err = oscommands.RunLineOutputCmd(cmd, func(line string) (bool, error) {
+	err = oscommands.RunLineOutputCmd(cmdObj, func(line string) (bool, error) {
 		if canExtractCommit(line) {
 			commit := c.extractCommitFromLine(line)
 			if commit.Sha == firstPushedCommit {
@@ -201,7 +200,7 @@ func (c *CommitListBuilder) getHydratedRebasingCommits(rebaseMode string) ([]*mo
 
 	// note that we're not filtering these as we do non-rebasing commits just because
 	// I suspect that will cause some damage
-	cmd := c.OSCommand.ExecutableFromString(
+	cmdObj := c.OSCommand.ExecutableFromString(
 		fmt.Sprintf(
 			"git show %s --no-patch --oneline %s --abbrev=%d",
 			strings.Join(commitShas, " "),
@@ -212,7 +211,7 @@ func (c *CommitListBuilder) getHydratedRebasingCommits(rebaseMode string) ([]*mo
 
 	hydratedCommits := make([]*models.Commit, 0, len(commits))
 	i := 0
-	err = oscommands.RunLineOutputCmd(cmd, func(line string) (bool, error) {
+	err = oscommands.RunLineOutputCmd(cmdObj, func(line string) (bool, error) {
 		if canExtractCommit(line) {
 			commit := c.extractCommitFromLine(line)
 			matchingCommit := commits[i]
@@ -400,7 +399,7 @@ func (c *CommitListBuilder) getFirstPushedCommit(refName string) (string, error)
 }
 
 // getLog gets the git log.
-func (c *CommitListBuilder) getLogCmd(opts GetCommitsOptions) *exec.Cmd {
+func (c *CommitListBuilder) getLogCmd(opts GetCommitsOptions) oscommands.ICmdObj {
 	limitFlag := ""
 	if opts.Limit {
 		limitFlag = "-300"

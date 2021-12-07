@@ -37,8 +37,8 @@ func (gui *Gui) submodulesRenderToMain() error {
 			task = NewRenderStringTask(prefix)
 		} else {
 			cmdStr := gui.GitCommand.WorktreeFileDiffCmdStr(file, false, !file.HasUnstagedChanges && file.HasStagedChanges, gui.State.IgnoreWhitespaceInDiffView)
-			cmd := gui.OSCommand.ExecutableFromString(cmdStr)
-			task = NewRunCommandTaskWithPrefix(cmd, prefix)
+			cmdObj := gui.OSCommand.ExecutableFromString(cmdStr)
+			task = NewRunCommandTaskWithPrefix(cmdObj.GetCmd(), prefix)
 		}
 	}
 

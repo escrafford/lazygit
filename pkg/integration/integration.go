@@ -429,22 +429,16 @@ func getLazygitCommand(testPath string, rootDir string, record bool, speed float
 
 	cmdStr := fmt.Sprintf("%s -debug --use-config-dir=%s --path=%s %s", tempLazygitPath(), configDir, actualDir, extraCmdArgs)
 
-	cmd := osCommand.ExecutableFromString(cmdStr)
-	cmd.Env = append(cmd.Env, fmt.Sprintf("SPEED=%f", speed))
+	cmdObj := osCommand.ExecutableFromString(cmdStr)
+	cmdObj.AddEnvVars(fmt.Sprintf("SPEED=%f", speed))
 
 	if record {
-		cmd.Env = append(
-			cmd.Env,
-			fmt.Sprintf("RECORD_EVENTS_TO=%s", replayPath),
-		)
+		cmdObj.AddEnvVars(fmt.Sprintf("RECORD_EVENTS_TO=%s", replayPath))
 	} else {
-		cmd.Env = append(
-			cmd.Env,
-			fmt.Sprintf("REPLAY_EVENTS_FROM=%s", replayPath),
-		)
+		cmdObj.AddEnvVars(fmt.Sprintf("REPLAY_EVENTS_FROM=%s", replayPath))
 	}
 
-	return cmd, nil
+	return cmdObj.GetCmd(), nil
 }
 
 func folderExists(path string) bool {

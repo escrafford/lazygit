@@ -29,6 +29,18 @@ type Platform struct {
 	OpenLinkCommand string
 }
 
+type ICommander interface {
+	Run(ICmdObj) error
+	RunWithOutput(ICmdObj) (string, error)
+}
+
+type RealCommander struct {
+}
+
+func (self *RealCommander) Run(cmdObj ICmdObj) error {
+	return cmdObj.GetCmd().Run()
+}
+
 // OSCommand holds all the os commands
 type OSCommand struct {
 	Log              *logrus.Entry
@@ -141,12 +153,11 @@ type RunCommandOptions struct {
 
 func (c *OSCommand) RunCommandWithOutputWithOptions(command string, options RunCommandOptions) (string, error) {
 	c.LogCommand(command, true)
-	cmd := c.ExecutableFromString(command)
+	cmdObj := c.ExecutableFromString(command)
+	cmdObj.AddEnvVars("GIT_TERMINAL_PROMPT=0") // prevents git from prompting us for input which would freeze the program
+	cmdObj.AddEnvVars(options.EnvVars...)
 
-	cmd.Env = append(cmd.Env, "GIT_TERMINAL_PROMPT=0") // prevents git from prompting us for input which would freeze the program
-	cmd.Env = append(cmd.Env, options.EnvVars...)
-
-	return sanitisedCommandOutput(cmd.CombinedOutput())
+	return sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
 }
 
 func (c *OSCommand) RunCommandWithOptions(command string, options RunCommandOptions) error {
@@ -165,38 +176,25 @@ func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...inte
 	if formatArgs != nil {
 		command = fmt.Sprintf(formatString, formatArgs...)
 	}
-	cmd := c.ExecutableFromString(command)
-	c.LogExecCmd(cmd)
-	output, err := sanitisedCommandOutput(cmd.CombinedOutput())
+	cmdObj := c.ExecutableFromString(command)
+	c.LogCommand(cmdObj.ToString(), true)
+	output, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
 	if err != nil {
 		c.Log.WithField("command", command).Error(output)
 	}
 	return output, err
 }
 
-// RunExecutableWithOutput runs an executable file and returns its output
-func (c *OSCommand) RunExecutableWithOutput(cmd *exec.Cmd) (string, error) {
-	c.LogExecCmd(cmd)
-	c.BeforeExecuteCmd(cmd)
-	return sanitisedCommandOutput(cmd.CombinedOutput())
-}
-
 // RunExecutable runs an executable file and returns an error if there was one
 func (c *OSCommand) RunExecutable(cmd *exec.Cmd) error {
-	_, err := c.RunExecutableWithOutput(cmd)
+	c.LogExecCmd(cmd)
+	c.BeforeExecuteCmd(cmd)
+	_, err := sanitisedCommandOutput(cmd.CombinedOutput())
 	return err
 }
 
-// ExecutableFromString takes a string like `git status` and returns an executable command for it
-func (c *OSCommand) ExecutableFromString(commandStr string) *exec.Cmd {
-	splitCmd := str.ToArgv(commandStr)
-	cmd := c.Command(splitCmd[0], splitCmd[1:]...)
-	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
-	return cmd
-}
-
 // ShellCommandFromString takes a string like `git commit` and returns an executable shell command for it
-func (c *OSCommand) ShellCommandFromString(commandStr string) *exec.Cmd {
+func (c *OSCommand) ShellCommandFromString(commandStr string) ICmdObj {
 	quotedCommand := ""
 	// Windows does not seem to like quotes around the command
 	if c.Platform.OS == "windows" {
@@ -213,7 +211,7 @@ func (c *OSCommand) ShellCommandFromString(commandStr string) *exec.Cmd {
 	}
 
 	shellCommand := fmt.Sprintf("%s %s %s", c.Platform.Shell, c.Platform.ShellArg, quotedCommand)
-	return c.ExecutableFromString(shellCommand)
+	return c.NewCmdObjFromStr(shellCommand)
 }
 
 // RunCommand runs a command and just returns the error
@@ -225,10 +223,10 @@ func (c *OSCommand) RunCommand(formatString string, formatArgs ...interface{}) e
 // RunShellCommand runs shell commands i.e. 'sh -c <command>'. Good for when you
 // need access to the shell
 func (c *OSCommand) RunShellCommand(command string) error {
-	cmd := c.ShellCommandFromString(command)
-	c.LogExecCmd(cmd)
+	cmdObj := c.ShellCommandFromString(command)
+	c.LogCommand(cmdObj.ToString(), true)
 
-	_, err := sanitisedCommandOutput(cmd.CombinedOutput())
+	_, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
 
 	return err
 }
@@ -282,20 +280,14 @@ func (c *OSCommand) OpenLink(link string) error {
 	return err
 }
 
-// PrepareSubProcess iniPrepareSubProcessrocess then tells the Gui to switch to it
-// TODO: see if this needs to exist, given that ExecutableFromString does the same things
-func (c *OSCommand) PrepareSubProcess(cmdName string, commandArgs ...string) *exec.Cmd {
-	cmd := c.Command(cmdName, commandArgs...)
-	if cmd != nil {
-		cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
-	}
-	c.LogExecCmd(cmd)
-	return cmd
+// ExecutableFromString takes a string like `git status` and returns an executable command for it
+func (c *OSCommand) ExecutableFromString(commandStr string) ICmdObj {
+	return c.NewCmdObjFromStr(commandStr)
 }
 
 // PrepareShellSubProcess returns the pointer to a custom command
-func (c *OSCommand) PrepareShellSubProcess(command string) *exec.Cmd {
-	return c.PrepareSubProcess(c.Platform.Shell, c.Platform.ShellArg, command)
+func (c *OSCommand) PrepareShellSubProcess(command string) ICmdObj {
+	return c.NewCmdObjFromArgs([]string{c.Platform.Shell, c.Platform.ShellArg, command})
 }
 
 // Quote wraps a message in platform-specific quotation marks
@@ -393,7 +385,8 @@ func (c *OSCommand) FileExists(path string) (bool, error) {
 // RunPreparedCommand takes a pointer to an exec.Cmd and runs it
 // this is useful if you need to give your command some environment variables
 // before running it
-func (c *OSCommand) RunPreparedCommand(cmd *exec.Cmd) error {
+func (c *OSCommand) RunPreparedCommand(cmdObj ICmdObj) error {
+	cmd := cmdObj.GetCmd()
 	c.BeforeExecuteCmd(cmd)
 	c.LogExecCmd(cmd)
 	out, err := cmd.CombinedOutput()
@@ -426,7 +419,7 @@ func (c *OSCommand) PipeCommands(commandStrings ...string) error {
 			logCmdStr += " | "
 		}
 		logCmdStr += str
-		cmds[i] = c.ExecutableFromString(str)
+		cmds[i] = c.ExecutableFromString(str).GetCmd()
 	}
 	c.LogCommand(logCmdStr, true)
 
@@ -489,7 +482,8 @@ func Kill(cmd *exec.Cmd) error {
 	return cmd.Process.Kill()
 }
 
-func RunLineOutputCmd(cmd *exec.Cmd, onLine func(line string) (bool, error)) error {
+func RunLineOutputCmd(cmdObj ICmdObj, onLine func(line string) (bool, error)) error {
+	cmd := cmdObj.GetCmd()
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return err

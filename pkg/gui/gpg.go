@@ -33,9 +33,10 @@ func (gui *Gui) withGpgHandling(cmdStr string, waitingStatus string, onSuccess f
 
 func (gui *Gui) RunAndStream(cmdStr string, waitingStatus string, onSuccess func() error) error {
 	return gui.WithWaitingStatus(waitingStatus, func() error {
-		cmd := gui.OSCommand.ShellCommandFromString(cmdStr)
-		cmd.Env = append(cmd.Env, "TERM=dumb")
+		cmdObj := gui.OSCommand.ShellCommandFromString(cmdStr)
+		cmdObj.AddEnvVars("TERM=dumb")
 		cmdWriter := gui.getCmdWriter()
+		cmd := cmdObj.GetCmd()
 		cmd.Stdout = cmdWriter
 		cmd.Stderr = cmdWriter
 

@@ -59,21 +59,21 @@ func (gui *Gui) filesRenderToMain() error {
 	}
 
 	cmdStr := gui.GitCommand.WorktreeFileDiffCmdStr(node, false, !node.GetHasUnstagedChanges() && node.GetHasStagedChanges(), gui.State.IgnoreWhitespaceInDiffView)
-	cmd := gui.OSCommand.ExecutableFromString(cmdStr)
+	cmdObj := gui.OSCommand.ExecutableFromString(cmdStr)
 
 	refreshOpts := refreshMainOpts{main: &viewUpdateOpts{
 		title: gui.Tr.UnstagedChanges,
-		task:  NewRunPtyTask(cmd),
+		task:  NewRunPtyTask(cmdObj.GetCmd()),
 	}}
 
 	if node.GetHasUnstagedChanges() {
 		if node.GetHasStagedChanges() {
 			cmdStr := gui.GitCommand.WorktreeFileDiffCmdStr(node, false, true, gui.State.IgnoreWhitespaceInDiffView)
-			cmd := gui.OSCommand.ExecutableFromString(cmdStr)
+			cmdObj := gui.OSCommand.ExecutableFromString(cmdStr)
 
 			refreshOpts.secondary = &viewUpdateOpts{
 				title: gui.Tr.StagedChanges,
-				task:  NewRunPtyTask(cmd),
+				task:  NewRunPtyTask(cmdObj.GetCmd()),
 			}
 		}
 	} else {
@@ -459,7 +459,7 @@ func (gui *Gui) handleCommitEditorPress() error {
 	}
 
 	return gui.runSubprocessWithSuspenseAndRefresh(
-		gui.OSCommand.WithSpan(gui.Tr.Spans.Commit).PrepareSubProcess("git", "commit"),
+		gui.GitCommand.WithSpan(gui.Tr.Spans.Commit).NewCmdObjFromStrWithLog("git commit"),
 	)
 }
 
