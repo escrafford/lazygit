@@ -15,7 +15,7 @@ func (gui *Gui) withGpgHandling(cmdStr string, waitingStatus string, onSuccess f
 	if useSubprocess {
 		// Need to remember why we use the shell for the subprocess but not in the other case
 		// Maybe there's no good reason
-		success, err := gui.runSubprocessWithSuspense(gui.OSCommand.ShellCommandFromString(cmdStr))
+		success, err := gui.runSubprocessWithSuspense(gui.OSCommand.NewShellCmdObjFromString(cmdStr))
 		if success && onSuccess != nil {
 			if err := onSuccess(); err != nil {
 				return err
@@ -33,7 +33,7 @@ func (gui *Gui) withGpgHandling(cmdStr string, waitingStatus string, onSuccess f
 
 func (gui *Gui) RunAndStream(cmdStr string, waitingStatus string, onSuccess func() error) error {
 	return gui.WithWaitingStatus(waitingStatus, func() error {
-		cmdObj := gui.OSCommand.ShellCommandFromString(cmdStr)
+		cmdObj := gui.OSCommand.NewShellCmdObjFromString(cmdStr)
 		cmdObj.AddEnvVars("TERM=dumb")
 		cmdWriter := gui.getCmdWriter()
 		cmd := cmdObj.GetCmd()

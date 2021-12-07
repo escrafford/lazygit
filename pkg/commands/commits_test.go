@@ -4,7 +4,6 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/jesseduffield/lazygit/pkg/commands/oscommands"
 	"github.com/jesseduffield/lazygit/pkg/secureexec"
 	"github.com/jesseduffield/lazygit/pkg/test"
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,7 @@ func TestGitCommandResetToCommit(t *testing.T) {
 		return secureexec.Command("echo")
 	}
 
-	assert.NoError(t, gitCmd.ResetToCommit("78976bc", "hard", oscommands.RunCommandOptions{}))
+	assert.NoError(t, gitCmd.ResetToCommit("78976bc", "hard", []string{}))
 }
 
 // TestGitCommandCommitStr is a function.

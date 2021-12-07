@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jesseduffield/lazygit/pkg/commands/oscommands"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 )
 
@@ -61,7 +60,14 @@ func (c *GitCommand) Checkout(branch string, options CheckoutOptions) error {
 	if options.Force {
 		forceArg = " --force"
 	}
-	return c.OSCommand.RunCommandWithOptions(fmt.Sprintf("git checkout%s %s", forceArg, c.OSCommand.Quote(branch)), oscommands.RunCommandOptions{EnvVars: options.EnvVars})
+
+	cmdObj := c.NewCmdObjFromStr(fmt.Sprintf("git checkout%s %s", forceArg, c.OSCommand.Quote(branch))).
+		// prevents git from prompting us for input which would freeze the program
+		// TODO: see if this is actually needed here
+		AddEnvVars("GIT_TERMINAL_PROMPT=0").
+		AddEnvVars(options.EnvVars...)
+
+	return c.OSCommand.RunCommandObj(cmdObj)
 }
 
 // GetBranchGraph gets the color-formatted graph of the log for the given branch

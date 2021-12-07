@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
-	"github.com/jesseduffield/lazygit/pkg/commands/oscommands"
 )
 
 // RenameCommit renames the topmost commit with the given name
@@ -14,8 +13,14 @@ func (c *GitCommand) RenameCommit(name string) error {
 }
 
 // ResetToCommit reset to commit
-func (c *GitCommand) ResetToCommit(sha string, strength string, options oscommands.RunCommandOptions) error {
-	return c.OSCommand.RunCommandWithOptions(fmt.Sprintf("git reset --%s %s", strength, sha), options)
+func (c *GitCommand) ResetToCommit(sha string, strength string, envVars []string) error {
+	cmdObj := c.NewCmdObjFromStr(fmt.Sprintf("git reset --%s %s", strength, sha)).
+		// prevents git from prompting us for input which would freeze the program
+		// TODO: see if this is actually needed here
+		AddEnvVars("GIT_TERMINAL_PROMPT=0").
+		AddEnvVars(envVars...)
+
+	return c.OSCommand.RunCommandObj(cmdObj)
 }
 
 func (c *GitCommand) CommitCmdStr(message string, flags string) string {

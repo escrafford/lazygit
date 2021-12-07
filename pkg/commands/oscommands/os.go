@@ -147,82 +147,6 @@ func (c *OSCommand) SetBeforeExecuteCmd(cmd func(*exec.Cmd)) {
 	c.BeforeExecuteCmd = cmd
 }
 
-type RunCommandOptions struct {
-	EnvVars []string
-}
-
-func (c *OSCommand) RunCommandWithOutputWithOptions(command string, options RunCommandOptions) (string, error) {
-	c.LogCommand(command, true)
-	cmdObj := c.NewCmdObjFromStr(command)
-	cmdObj.AddEnvVars("GIT_TERMINAL_PROMPT=0") // prevents git from prompting us for input which would freeze the program
-	cmdObj.AddEnvVars(options.EnvVars...)
-
-	return sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
-}
-
-func (c *OSCommand) RunCommandWithOptions(command string, options RunCommandOptions) error {
-	_, err := c.RunCommandWithOutputWithOptions(command, options)
-	return err
-}
-
-// RunCommandWithOutput wrapper around commands returning their output and error
-// NOTE: If you don't pass any formatArgs we'll just use the command directly,
-// however there's a bizarre compiler error/warning when you pass in a formatString
-// with a percent sign because it thinks it's supposed to be a formatString when
-// in that case it's not. To get around that error you'll need to define the string
-// in a variable and pass the variable into RunCommandWithOutput.
-func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...interface{}) (string, error) {
-	command := formatString
-	if formatArgs != nil {
-		command = fmt.Sprintf(formatString, formatArgs...)
-	}
-	cmdObj := c.NewCmdObjFromStr(command)
-	c.LogCommand(cmdObj.ToString(), true)
-	output, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
-	if err != nil {
-		c.Log.WithField("command", command).Error(output)
-	}
-	return output, err
-}
-
-// ShellCommandFromString takes a string like `git commit` and returns an executable shell command for it
-func (c *OSCommand) ShellCommandFromString(commandStr string) ICmdObj {
-	quotedCommand := ""
-	// Windows does not seem to like quotes around the command
-	if c.Platform.OS == "windows" {
-		quotedCommand = strings.NewReplacer(
-			"^", "^^",
-			"&", "^&",
-			"|", "^|",
-			"<", "^<",
-			">", "^>",
-			"%", "^%",
-		).Replace(commandStr)
-	} else {
-		quotedCommand = c.Quote(commandStr)
-	}
-
-	shellCommand := fmt.Sprintf("%s %s %s", c.Platform.Shell, c.Platform.ShellArg, quotedCommand)
-	return c.NewCmdObjFromStr(shellCommand)
-}
-
-// RunCommand runs a command and just returns the error
-func (c *OSCommand) RunCommand(formatString string, formatArgs ...interface{}) error {
-	_, err := c.RunCommandWithOutput(formatString, formatArgs...)
-	return err
-}
-
-// RunShellCommand runs shell commands i.e. 'sh -c <command>'. Good for when you
-// need access to the shell
-func (c *OSCommand) RunShellCommand(command string) error {
-	cmdObj := c.ShellCommandFromString(command)
-	c.LogCommand(cmdObj.ToString(), true)
-
-	_, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
-
-	return err
-}
-
 // FileType tells us if the file is a file, directory or other
 func (c *OSCommand) FileType(path string) string {
 	fileInfo, err := os.Stat(path)
@@ -235,19 +159,6 @@ func (c *OSCommand) FileType(path string) string {
 	return "file"
 }
 
-func sanitisedCommandOutput(output []byte, err error) (string, error) {
-	outputString := string(output)
-	if err != nil {
-		// errors like 'exit status 1' are not very useful so we'll create an error
-		// from the combined output
-		if outputString == "" {
-			return "", utils.WrapError(err)
-		}
-		return outputString, errors.New(outputString)
-	}
-	return outputString, nil
-}
-
 // OpenFile opens a file with the given
 func (c *OSCommand) OpenFile(filename string) error {
 	commandTemplate := c.Config.GetUserConfig().OS.OpenCommand
@@ -255,7 +166,7 @@ func (c *OSCommand) OpenFile(filename string) error {
 		"filename": c.Quote(filename),
 	}
 	command := utils.ResolvePlaceholderString(commandTemplate, templateValues)
-	err := c.RunShellCommand(command)
+	err := c.RunCommandObj(c.NewShellCmdObjFromString(command))
 	return err
 }
 
@@ -268,13 +179,8 @@ func (c *OSCommand) OpenLink(link string) error {
 	}
 
 	command := utils.ResolvePlaceholderString(commandTemplate, templateValues)
-	err := c.RunShellCommand(command)
+	err := c.RunCommandObj(c.NewShellCmdObjFromString(command))
 	return err
-}
-
-// PrepareShellSubProcess returns the pointer to a custom command
-func (c *OSCommand) PrepareShellSubProcess(command string) ICmdObj {
-	return c.NewCmdObjFromArgs([]string{c.Platform.Shell, c.Platform.ShellArg, command})
 }
 
 // Quote wraps a message in platform-specific quotation marks
@@ -369,25 +275,6 @@ func (c *OSCommand) FileExists(path string) (bool, error) {
 	return true, nil
 }
 
-// RunPreparedCommand takes a pointer to an exec.Cmd and runs it
-// this is useful if you need to give your command some environment variables
-// before running it
-func (c *OSCommand) RunPreparedCommand(cmdObj ICmdObj) error {
-	cmd := cmdObj.GetCmd()
-	c.BeforeExecuteCmd(cmd)
-	c.LogCmdObj(cmdObj)
-	out, err := cmd.CombinedOutput()
-	outString := string(out)
-	c.Log.Info(outString)
-	if err != nil {
-		if len(outString) == 0 {
-			return err
-		}
-		return errors.New(outString)
-	}
-	return nil
-}
-
 // GetLazygitPath returns the path of the currently executed file
 func (c *OSCommand) GetLazygitPath() string {
 	ex, err := os.Executable() // get the executable path for git to use
@@ -469,6 +356,143 @@ func Kill(cmd *exec.Cmd) error {
 	return cmd.Process.Kill()
 }
 
+func (c *OSCommand) CopyToClipboard(str string) error {
+	escaped := strings.Replace(str, "\n", "\\n", -1)
+	truncated := utils.TruncateWithEllipsis(escaped, 40)
+	c.LogCommand(fmt.Sprintf("Copying '%s' to clipboard", truncated), false)
+	return clipboard.WriteAll(str)
+}
+
+func (c *OSCommand) RemoveFile(path string) error {
+	c.LogCommand(fmt.Sprintf("Deleting path '%s'", path), false)
+
+	return c.removeFile(path)
+}
+
+// builders
+
+func (c *OSCommand) NewCmdObjFromStr(cmdStr string) ICmdObj {
+	args := str.ToArgv(cmdStr)
+	cmd := c.Command(args[0], args[1:]...)
+	cmd.Env = os.Environ()
+
+	return &CmdObj{
+		cmdStr: cmdStr,
+		cmd:    cmd,
+	}
+}
+
+func (c *OSCommand) NewCmdObjFromArgs(args []string) ICmdObj {
+	cmd := c.Command(args[0], args[1:]...)
+
+	return &CmdObj{
+		cmdStr: strings.Join(args, " "),
+		cmd:    cmd,
+	}
+}
+
+func (c *OSCommand) NewCmdObj(cmd *exec.Cmd) ICmdObj {
+	return &CmdObj{
+		cmdStr: strings.Join(cmd.Args, " "),
+		cmd:    cmd,
+	}
+}
+
+// NewShellCmdObjFromString takes a string like `git commit` and returns an executable shell command for it
+func (c *OSCommand) NewShellCmdObjFromString(commandStr string) ICmdObj {
+	quotedCommand := ""
+	// Windows does not seem to like quotes around the command
+	if c.Platform.OS == "windows" {
+		quotedCommand = strings.NewReplacer(
+			"^", "^^",
+			"&", "^&",
+			"|", "^|",
+			"<", "^<",
+			">", "^>",
+			"%", "^%",
+		).Replace(commandStr)
+	} else {
+		quotedCommand = c.Quote(commandStr)
+	}
+
+	shellCommand := fmt.Sprintf("%s %s %s", c.Platform.Shell, c.Platform.ShellArg, quotedCommand)
+	return c.NewCmdObjFromStr(shellCommand)
+}
+
+// TODO: pick one of NewShellCmdObjFromString2 and ShellCommandFromString to use. I'm not sure
+// which one actually is better, but I suspect it's NewShellCmdObjFromString2
+func (c *OSCommand) NewShellCmdObjFromString2(command string) ICmdObj {
+	return c.NewCmdObjFromArgs([]string{c.Platform.Shell, c.Platform.ShellArg, command})
+}
+
+// runners
+
+// RunCommand runs a command and just returns the error
+func (c *OSCommand) RunCommand(formatString string, formatArgs ...interface{}) error {
+	_, err := c.RunCommandWithOutput(formatString, formatArgs...)
+	return err
+}
+
+// RunCommandWithOutput wrapper around commands returning their output and error
+// NOTE: If you don't pass any formatArgs we'll just use the command directly,
+// however there's a bizarre compiler error/warning when you pass in a formatString
+// with a percent sign because it thinks it's supposed to be a formatString when
+// in that case it's not. To get around that error you'll need to define the string
+// in a variable and pass the variable into RunCommandWithOutput.
+func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...interface{}) (string, error) {
+	command := formatString
+	if formatArgs != nil {
+		command = fmt.Sprintf(formatString, formatArgs...)
+	}
+	cmdObj := c.NewCmdObjFromStr(command)
+	c.LogCommand(cmdObj.ToString(), true)
+	output, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
+	if err != nil {
+		c.Log.WithField("command", command).Error(output)
+	}
+	return output, err
+}
+
+func (c *OSCommand) RunCommandObj(cmdObj ICmdObj) error {
+	return c.RunCommand(cmdObj.ToString())
+}
+
+func (c *OSCommand) RunCommandObjWithOutput(cmdObj ICmdObj) (string, error) {
+	return c.RunCommandWithOutput(cmdObj.ToString())
+}
+
+func sanitisedCommandOutput(output []byte, err error) (string, error) {
+	outputString := string(output)
+	if err != nil {
+		// errors like 'exit status 1' are not very useful so we'll create an error
+		// from the combined output
+		if outputString == "" {
+			return "", utils.WrapError(err)
+		}
+		return outputString, errors.New(outputString)
+	}
+	return outputString, nil
+}
+
+// RunPreparedCommand takes a pointer to an exec.Cmd and runs it
+// this is useful if you need to give your command some environment variables
+// before running it
+func (c *OSCommand) RunPreparedCommand(cmdObj ICmdObj) error {
+	cmd := cmdObj.GetCmd()
+	c.BeforeExecuteCmd(cmd)
+	c.LogCmdObj(cmdObj)
+	out, err := cmd.CombinedOutput()
+	outString := string(out)
+	c.Log.Info(outString)
+	if err != nil {
+		if len(outString) == 0 {
+			return err
+		}
+		return errors.New(outString)
+	}
+	return nil
+}
+
 func RunLineOutputCmd(cmdObj ICmdObj, onLine func(line string) (bool, error)) error {
 	cmd := cmdObj.GetCmd()
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -497,44 +521,4 @@ func RunLineOutputCmd(cmdObj ICmdObj, onLine func(line string) (bool, error)) er
 	_ = cmd.Wait()
 
 	return nil
-}
-
-func (c *OSCommand) CopyToClipboard(str string) error {
-	escaped := strings.Replace(str, "\n", "\\n", -1)
-	truncated := utils.TruncateWithEllipsis(escaped, 40)
-	c.LogCommand(fmt.Sprintf("Copying '%s' to clipboard", truncated), false)
-	return clipboard.WriteAll(str)
-}
-
-func (c *OSCommand) RemoveFile(path string) error {
-	c.LogCommand(fmt.Sprintf("Deleting path '%s'", path), false)
-
-	return c.removeFile(path)
-}
-
-func (c *OSCommand) NewCmdObjFromStr(cmdStr string) ICmdObj {
-	args := str.ToArgv(cmdStr)
-	cmd := c.Command(args[0], args[1:]...)
-	cmd.Env = os.Environ()
-
-	return &CmdObj{
-		cmdStr: cmdStr,
-		cmd:    cmd,
-	}
-}
-
-func (c *OSCommand) NewCmdObjFromArgs(args []string) ICmdObj {
-	cmd := c.Command(args[0], args[1:]...)
-
-	return &CmdObj{
-		cmdStr: strings.Join(args, " "),
-		cmd:    cmd,
-	}
-}
-
-func (c *OSCommand) NewCmdObj(cmd *exec.Cmd) ICmdObj {
-	return &CmdObj{
-		cmdStr: strings.Join(cmd.Args, " "),
-		cmd:    cmd,
-	}
 }

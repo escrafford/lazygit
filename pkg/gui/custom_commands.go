@@ -244,7 +244,7 @@ func (gui *Gui) handleCustomCommandKeybinding(customCommand config.CustomCommand
 			}
 
 			if customCommand.Subprocess {
-				return gui.runSubprocessWithSuspenseAndRefresh(gui.OSCommand.PrepareShellSubProcess(cmdStr))
+				return gui.runSubprocessWithSuspenseAndRefresh(gui.OSCommand.NewShellCmdObjFromString2(cmdStr))
 			}
 
 			loadingText := customCommand.LoadingText
@@ -252,7 +252,8 @@ func (gui *Gui) handleCustomCommandKeybinding(customCommand config.CustomCommand
 				loadingText = gui.Tr.LcRunningCustomCommandStatus
 			}
 			return gui.WithWaitingStatus(loadingText, func() error {
-				if err := gui.OSCommand.WithSpan(gui.Tr.Spans.CustomCommand).RunShellCommand(cmdStr); err != nil {
+				cmdObj := gui.OSCommand.NewShellCmdObjFromString(cmdStr)
+				if err := gui.OSCommand.WithSpan(gui.Tr.Spans.CustomCommand).RunCommandObj(cmdObj); err != nil {
 					return gui.surfaceError(err)
 				}
 				return gui.refreshSidePanels(refreshOptions{})
