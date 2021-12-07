@@ -166,7 +166,7 @@ func (c *OSCommand) OpenFile(filename string) error {
 		"filename": c.Quote(filename),
 	}
 	command := utils.ResolvePlaceholderString(commandTemplate, templateValues)
-	err := c.RunCommandObj(c.NewShellCmdObjFromString(command))
+	err := c.Run(c.NewShellCmdObjFromString(command))
 	return err
 }
 
@@ -179,7 +179,7 @@ func (c *OSCommand) OpenLink(link string) error {
 	}
 
 	command := utils.ResolvePlaceholderString(commandTemplate, templateValues)
-	err := c.RunCommandObj(c.NewShellCmdObjFromString(command))
+	err := c.Run(c.NewShellCmdObjFromString(command))
 	return err
 }
 
@@ -293,7 +293,7 @@ func (c *OSCommand) PipeCommands(commandStrings ...string) error {
 			logCmdStr += " | "
 		}
 		logCmdStr += str
-		cmds[i] = c.NewCmdObjFromStr(str).GetCmd()
+		cmds[i] = c.NewCmdObj(str).GetCmd()
 	}
 	c.LogCommand(logCmdStr, true)
 
@@ -371,7 +371,7 @@ func (c *OSCommand) RemoveFile(path string) error {
 
 // builders
 
-func (c *OSCommand) NewCmdObjFromStr(cmdStr string) ICmdObj {
+func (c *OSCommand) NewCmdObj(cmdStr string) ICmdObj {
 	args := str.ToArgv(cmdStr)
 	cmd := c.Command(args[0], args[1:]...)
 	cmd.Env = os.Environ()
@@ -391,7 +391,7 @@ func (c *OSCommand) NewCmdObjFromArgs(args []string) ICmdObj {
 	}
 }
 
-func (c *OSCommand) NewCmdObj(cmd *exec.Cmd) ICmdObj {
+func (c *OSCommand) NewCmdObjFromCmd(cmd *exec.Cmd) ICmdObj {
 	return &CmdObj{
 		cmdStr: strings.Join(cmd.Args, " "),
 		cmd:    cmd,
@@ -416,7 +416,7 @@ func (c *OSCommand) NewShellCmdObjFromString(commandStr string) ICmdObj {
 	}
 
 	shellCommand := fmt.Sprintf("%s %s %s", c.Platform.Shell, c.Platform.ShellArg, quotedCommand)
-	return c.NewCmdObjFromStr(shellCommand)
+	return c.NewCmdObj(shellCommand)
 }
 
 // TODO: pick one of NewShellCmdObjFromString2 and ShellCommandFromString to use. I'm not sure
@@ -444,7 +444,7 @@ func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...inte
 	if formatArgs != nil {
 		command = fmt.Sprintf(formatString, formatArgs...)
 	}
-	cmdObj := c.NewCmdObjFromStr(command)
+	cmdObj := c.NewCmdObj(command)
 	c.LogCommand(cmdObj.ToString(), true)
 	output, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
 	if err != nil {
@@ -453,11 +453,11 @@ func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...inte
 	return output, err
 }
 
-func (c *OSCommand) RunCommandObj(cmdObj ICmdObj) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr(cmdObj.ToString()))
+func (c *OSCommand) Run(cmdObj ICmdObj) error {
+	return c.Run(c.NewCmdObj(cmdObj.ToString()))
 }
 
-func (c *OSCommand) RunCommandObjWithOutput(cmdObj ICmdObj) (string, error) {
+func (c *OSCommand) RunWithOutput(cmdObj ICmdObj) (string, error) {
 	return c.RunCommandWithOutput(cmdObj.ToString())
 }
 

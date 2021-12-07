@@ -35,8 +35,8 @@ func TestGitCommandResetToCommit(t *testing.T) {
 	assert.NoError(t, gitCmd.ResetToCommit("78976bc", "hard", []string{}))
 }
 
-// TestGitCommandCommitStr is a function.
-func TestGitCommandCommitStr(t *testing.T) {
+// TestGitCommandCommitObj is a function.
+func TestGitCommandCommitObj(t *testing.T) {
 	gitCmd := NewDummyGitCommand()
 
 	type scenario struct {
@@ -69,7 +69,7 @@ func TestGitCommandCommitStr(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(s.testName, func(t *testing.T) {
-			cmdStr := gitCmd.CommitCmdStr(s.message, s.flags)
+			cmdStr := gitCmd.CommitCmdObj(s.message, s.flags).ToString()
 			assert.Equal(t, s.expected, cmdStr)
 		})
 	}

@@ -217,7 +217,7 @@ func (c *GitCommand) PullPatchIntoNewCommit(commits []*models.Commit, commitIdx 
 
 	head_message, _ := c.GetHeadCommitMessage()
 	new_message := fmt.Sprintf("Split from \"%s\"", head_message)
-	err := c.OSCommand.RunCommand(c.CommitCmdStr(new_message, ""))
+	err := c.OSCommand.Run(c.CommitCmdObj(new_message, ""))
 	if err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ func (c *GitCommand) GetReflogCommits(lastReflogCommit *models.Commit, filterPat
 		filterPathArg = fmt.Sprintf(" --follow -- %s", c.OSCommand.Quote(filterPath))
 	}
 
-	cmdObj := c.OSCommand.NewCmdObjFromStr(fmt.Sprintf(`git log -g --abbrev=20 --format="%%h %%ct %%gs" %s`, filterPathArg))
+	cmdObj := c.OSCommand.NewCmdObj(fmt.Sprintf(`git log -g --abbrev=20 --format="%%h %%ct %%gs" %s`, filterPathArg))
 	onlyObtainedNewReflogCommits := false
 	err := oscommands.RunLineOutputCmd(cmdObj, func(line string) (bool, error) {
 		fields := strings.SplitN(line, " ", 3)

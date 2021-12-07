@@ -31,7 +31,7 @@ func (gui *Gui) branchesRenderToMain() error {
 	if branch == nil {
 		task = NewRenderStringTask(gui.Tr.NoBranchesThisRepo)
 	} else {
-		cmdObj := gui.OSCommand.NewCmdObjFromStr(
+		cmdObj := gui.OSCommand.NewCmdObj(
 			gui.GitCommand.GetBranchGraphCmdStr(branch.Name),
 		)
 

@@ -5,25 +5,26 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
+	"github.com/jesseduffield/lazygit/pkg/commands/oscommands"
 )
 
 // RenameCommit renames the topmost commit with the given name
 func (c *GitCommand) RenameCommit(name string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr("git commit --allow-empty --amend --only -m " + c.OSCommand.Quote(name)))
+	return c.Run(c.NewCmdObj("git commit --allow-empty --amend --only -m " + c.OSCommand.Quote(name)))
 }
 
 // ResetToCommit reset to commit
 func (c *GitCommand) ResetToCommit(sha string, strength string, envVars []string) error {
-	cmdObj := c.NewCmdObjFromStr(fmt.Sprintf("git reset --%s %s", strength, sha)).
+	cmdObj := c.NewCmdObj(fmt.Sprintf("git reset --%s %s", strength, sha)).
 		// prevents git from prompting us for input which would freeze the program
 		// TODO: see if this is actually needed here
 		AddEnvVars("GIT_TERMINAL_PROMPT=0").
 		AddEnvVars(envVars...)
 
-	return c.OSCommand.RunCommandObj(cmdObj)
+	return c.OSCommand.Run(cmdObj)
 }
 
-func (c *GitCommand) CommitCmdStr(message string, flags string) string {
+func (c *GitCommand) CommitCmdObj(message string, flags string) oscommands.ICmdObj {
 	splitMessage := strings.Split(message, "\n")
 	lineArgs := ""
 	for _, line := range splitMessage {
@@ -35,7 +36,7 @@ func (c *GitCommand) CommitCmdStr(message string, flags string) string {
 		flagsStr = fmt.Sprintf(" %s", flags)
 	}
 
-	return fmt.Sprintf("git commit%s%s", flagsStr, lineArgs)
+	return c.NewCmdObj(fmt.Sprintf("git commit%s%s", flagsStr, lineArgs))
 }
 
 // Get the subject of the HEAD commit
@@ -58,11 +59,11 @@ func (c *GitCommand) GetCommitMessageFirstLine(sha string) (string, error) {
 
 // AmendHead amends HEAD with whatever is staged in your working tree
 func (c *GitCommand) AmendHead() error {
-	return c.OSCommand.RunCommand(c.AmendHeadCmdStr())
+	return c.OSCommand.Run(c.AmendHeadCmdObj())
 }
 
-func (c *GitCommand) AmendHeadCmdStr() string {
-	return "git commit --amend --no-edit --allow-empty"
+func (c *GitCommand) AmendHeadCmdObj() oscommands.ICmdObj {
+	return c.NewCmdObj("git commit --amend --no-edit --allow-empty")
 }
 
 func (c *GitCommand) ShowCmdStr(sha string, filterPath string) string {
@@ -76,11 +77,11 @@ func (c *GitCommand) ShowCmdStr(sha string, filterPath string) string {
 
 // Revert reverts the selected commit by sha
 func (c *GitCommand) Revert(sha string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git revert %s", sha)))
+	return c.Run(c.NewCmdObj(fmt.Sprintf("git revert %s", sha)))
 }
 
 func (c *GitCommand) RevertMerge(sha string, parentNumber int) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git revert %s -m %d", sha, parentNumber)))
+	return c.Run(c.NewCmdObj(fmt.Sprintf("git revert %s -m %d", sha, parentNumber)))
 }
 
 // CherryPickCommits begins an interactive rebase with the given shas being cherry picked onto HEAD
@@ -100,5 +101,5 @@ func (c *GitCommand) CherryPickCommits(commits []*models.Commit) error {
 
 // CreateFixupCommit creates a commit that fixes up a previous commit
 func (c *GitCommand) CreateFixupCommit(sha string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr("git commit --fixup=" + sha))
+	return c.Run(c.NewCmdObj("git commit --fixup=" + sha))
 }

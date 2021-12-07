@@ -23,7 +23,7 @@ func (gui *Gui) subCommitsRenderToMain() error {
 	if commit == nil {
 		task = NewRenderStringTask("No commits")
 	} else {
-		cmdObj := gui.OSCommand.NewCmdObjFromStr(
+		cmdObj := gui.OSCommand.NewCmdObj(
 			gui.GitCommand.ShowCmdStr(commit.Sha, gui.State.Modes.Filtering.GetPath()),
 		)
 

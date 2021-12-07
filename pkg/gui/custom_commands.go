@@ -253,7 +253,7 @@ func (gui *Gui) handleCustomCommandKeybinding(customCommand config.CustomCommand
 			}
 			return gui.WithWaitingStatus(loadingText, func() error {
 				cmdObj := gui.OSCommand.NewShellCmdObjFromString(cmdStr)
-				if err := gui.OSCommand.WithSpan(gui.Tr.Spans.CustomCommand).RunCommandObj(cmdObj); err != nil {
+				if err := gui.OSCommand.WithSpan(gui.Tr.Spans.CustomCommand).Run(cmdObj); err != nil {
 					return gui.surfaceError(err)
 				}
 				return gui.refreshSidePanels(refreshOptions{})

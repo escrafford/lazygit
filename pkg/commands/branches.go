@@ -10,7 +10,7 @@ import (
 
 // NewBranch create new branch
 func (c *GitCommand) NewBranch(name string, base string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git checkout -b %s %s", c.OSCommand.Quote(name), c.OSCommand.Quote(base))))
+	return c.Run(c.NewCmdObj(fmt.Sprintf("git checkout -b %s %s", c.OSCommand.Quote(name), c.OSCommand.Quote(base))))
 }
 
 // CurrentBranchName get the current branch name and displayname.
@@ -46,7 +46,7 @@ func (c *GitCommand) DeleteBranch(branch string, force bool) error {
 		command = "git branch -D"
 	}
 
-	return c.OSCommand.RunCommand("%s %s", command, c.OSCommand.Quote(branch))
+	return c.OSCommand.Run(c.OSCommand.NewCmdObj(fmt.Sprintf("%s %s", command, c.OSCommand.Quote(branch))))
 }
 
 // Checkout checks out a branch (or commit), with --force if you set the force arg to true
@@ -61,13 +61,13 @@ func (c *GitCommand) Checkout(branch string, options CheckoutOptions) error {
 		forceArg = " --force"
 	}
 
-	cmdObj := c.NewCmdObjFromStr(fmt.Sprintf("git checkout%s %s", forceArg, c.OSCommand.Quote(branch))).
+	cmdObj := c.NewCmdObj(fmt.Sprintf("git checkout%s %s", forceArg, c.OSCommand.Quote(branch))).
 		// prevents git from prompting us for input which would freeze the program
 		// TODO: see if this is actually needed here
 		AddEnvVars("GIT_TERMINAL_PROMPT=0").
 		AddEnvVars(options.EnvVars...)
 
-	return c.OSCommand.RunCommandObj(cmdObj)
+	return c.OSCommand.Run(cmdObj)
 }
 
 // GetBranchGraph gets the color-formatted graph of the log for the given branch
@@ -92,11 +92,11 @@ func (c *GitCommand) GetBranchGraphCmdStr(branchName string) string {
 }
 
 func (c *GitCommand) SetUpstreamBranch(upstream string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr("git branch -u " + c.OSCommand.Quote(upstream)))
+	return c.Run(c.NewCmdObj("git branch -u " + c.OSCommand.Quote(upstream)))
 }
 
 func (c *GitCommand) SetBranchUpstream(remoteName string, remoteBranchName string, branchName string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git branch --set-upstream-to=%s/%s %s", c.OSCommand.Quote(remoteName), c.OSCommand.Quote(remoteBranchName), c.OSCommand.Quote(branchName))))
+	return c.Run(c.NewCmdObj(fmt.Sprintf("git branch --set-upstream-to=%s/%s %s", c.OSCommand.Quote(remoteName), c.OSCommand.Quote(remoteBranchName), c.OSCommand.Quote(branchName))))
 }
 
 func (c *GitCommand) GetCurrentBranchUpstreamDifferenceCount() (string, string) {
@@ -135,33 +135,33 @@ func (c *GitCommand) Merge(branchName string, opts MergeOpts) error {
 		command = fmt.Sprintf("%s --ff-only", command)
 	}
 
-	return c.OSCommand.RunCommand(command)
+	return c.OSCommand.Run(c.OSCommand.NewCmdObj(command))
 }
 
 // AbortMerge abort merge
 func (c *GitCommand) AbortMerge() error {
-	return c.RunCommandObj(c.NewCmdObjFromStr("git merge --abort"))
+	return c.Run(c.NewCmdObj("git merge --abort"))
 }
 
 func (c *GitCommand) IsHeadDetached() bool {
-	err := c.RunCommandObj(c.NewCmdObjFromStr("git symbolic-ref -q HEAD"))
+	err := c.Run(c.NewCmdObj("git symbolic-ref -q HEAD"))
 	return err != nil
 }
 
 // ResetHardHead runs `git reset --hard`
 func (c *GitCommand) ResetHard(ref string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr("git reset --hard " + c.OSCommand.Quote(ref)))
+	return c.Run(c.NewCmdObj("git reset --hard " + c.OSCommand.Quote(ref)))
 }
 
 // ResetSoft runs `git reset --soft HEAD`
 func (c *GitCommand) ResetSoft(ref string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr("git reset --soft " + c.OSCommand.Quote(ref)))
+	return c.Run(c.NewCmdObj("git reset --soft " + c.OSCommand.Quote(ref)))
 }
 
 func (c *GitCommand) ResetMixed(ref string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr("git reset --mixed " + c.OSCommand.Quote(ref)))
+	return c.Run(c.NewCmdObj("git reset --mixed " + c.OSCommand.Quote(ref)))
 }
 
 func (c *GitCommand) RenameBranch(oldName string, newName string) error {
-	return c.RunCommandObj(c.NewCmdObjFromStr(fmt.Sprintf("git branch --move %s %s", c.OSCommand.Quote(oldName), c.OSCommand.Quote(newName))))
+	return c.Run(c.NewCmdObj(fmt.Sprintf("git branch --move %s %s", c.OSCommand.Quote(oldName), c.OSCommand.Quote(newName))))
 }

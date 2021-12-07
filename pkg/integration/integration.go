@@ -45,7 +45,7 @@ func RunTests(
 	testDir := filepath.Join(rootDir, "test", "integration")
 
 	osCommand := oscommands.NewDummyOSCommand()
-	err = osCommand.RunCommand("go build -o %s", tempLazygitPath())
+	err = osCommand.Run(osCommand.NewCmdObj("go build -o " + tempLazygitPath()))
 	if err != nil {
 		return err
 	}
@@ -428,7 +428,7 @@ func getLazygitCommand(testPath string, rootDir string, record bool, speed float
 
 	cmdStr := fmt.Sprintf("%s -debug --use-config-dir=%s --path=%s %s", tempLazygitPath(), configDir, actualDir, extraCmdArgs)
 
-	cmdObj := osCommand.NewCmdObjFromStr(cmdStr)
+	cmdObj := osCommand.NewCmdObj(cmdStr)
 	cmdObj.AddEnvVars(fmt.Sprintf("SPEED=%f", speed))
 
 	if record {

@@ -22,7 +22,7 @@ func (gui *Gui) reflogCommitsRenderToMain() error {
 	if commit == nil {
 		task = NewRenderStringTask("No reflog history")
 	} else {
-		cmdObj := gui.OSCommand.NewCmdObjFromStr(
+		cmdObj := gui.OSCommand.NewCmdObj(
 			gui.GitCommand.ShowCmdStr(commit.Sha, gui.State.Modes.Filtering.GetPath()),
 		)
 

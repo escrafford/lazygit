@@ -59,7 +59,7 @@ func (gui *Gui) filesRenderToMain() error {
 	}
 
 	cmdStr := gui.GitCommand.WorktreeFileDiffCmdStr(node, false, !node.GetHasUnstagedChanges() && node.GetHasStagedChanges(), gui.State.IgnoreWhitespaceInDiffView)
-	cmdObj := gui.OSCommand.NewCmdObjFromStr(cmdStr)
+	cmdObj := gui.OSCommand.NewCmdObj(cmdStr)
 
 	refreshOpts := refreshMainOpts{main: &viewUpdateOpts{
 		title: gui.Tr.UnstagedChanges,
@@ -69,7 +69,7 @@ func (gui *Gui) filesRenderToMain() error {
 	if node.GetHasUnstagedChanges() {
 		if node.GetHasStagedChanges() {
 			cmdStr := gui.GitCommand.WorktreeFileDiffCmdStr(node, false, true, gui.State.IgnoreWhitespaceInDiffView)
-			cmdObj := gui.OSCommand.NewCmdObjFromStr(cmdStr)
+			cmdObj := gui.OSCommand.NewCmdObj(cmdStr)
 
 			refreshOpts.secondary = &viewUpdateOpts{
 				title: gui.Tr.StagedChanges,
@@ -440,9 +440,9 @@ func (gui *Gui) handleAmendCommitPress() error {
 		title:  strings.Title(gui.Tr.AmendLastCommit),
 		prompt: gui.Tr.SureToAmend,
 		handleConfirm: func() error {
-			cmdStr := gui.GitCommand.AmendHeadCmdStr()
-			gui.OnRunCommand(oscommands.NewCmdLogEntry(cmdStr, gui.Tr.Spans.AmendCommit, true))
-			return gui.withGpgHandling(cmdStr, gui.Tr.AmendingStatus, nil)
+			cmdObj := gui.GitCommand.AmendHeadCmdObj()
+			gui.OnRunCommand(oscommands.NewCmdLogEntry(cmdObj.ToString(), gui.Tr.Spans.AmendCommit, true))
+			return gui.withGpgHandling(cmdObj, gui.Tr.AmendingStatus, nil)
 		},
 	})
 }
@@ -459,7 +459,7 @@ func (gui *Gui) handleCommitEditorPress() error {
 	}
 
 	return gui.runSubprocessWithSuspenseAndRefresh(
-		gui.GitCommand.WithSpan(gui.Tr.Spans.Commit).NewCmdObjFromStrWithLog("git commit"),
+		gui.GitCommand.WithSpan(gui.Tr.Spans.Commit).NewCmdObjWithLog("git commit"),
 	)
 }
 
@@ -980,7 +980,7 @@ func (gui *Gui) handleOpenMergeTool() error {
 		prompt: gui.Tr.MergeToolPrompt,
 		handleConfirm: func() error {
 			return gui.runSubprocessWithSuspenseAndRefresh(
-				gui.OSCommand.NewCmdObjFromStr(gui.GitCommand.OpenMergeToolCmd()),
+				gui.OSCommand.NewCmdObj(gui.GitCommand.OpenMergeToolCmd()),
 			)
 		},
 	})

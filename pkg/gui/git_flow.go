@@ -32,7 +32,7 @@ func (gui *Gui) gitFlowFinishBranch(gitFlowConfig string, branchName string) err
 	}
 
 	return gui.runSubprocessWithSuspenseAndRefresh(
-		gui.GitCommand.WithSpan(gui.Tr.Spans.GitFlowFinish).NewCmdObjFromStrWithLog("git flow " + branchType + " finish " + suffix),
+		gui.GitCommand.WithSpan(gui.Tr.Spans.GitFlowFinish).NewCmdObjWithLog("git flow " + branchType + " finish " + suffix),
 	)
 }
 
@@ -56,7 +56,7 @@ func (gui *Gui) handleCreateGitFlowMenu() error {
 				title: title,
 				handleConfirm: func(name string) error {
 					return gui.runSubprocessWithSuspenseAndRefresh(
-						gui.GitCommand.WithSpan(gui.Tr.Spans.GitFlowStart).NewCmdObjFromStrWithLog("git flow " + branchType + " start " + name),
+						gui.GitCommand.WithSpan(gui.Tr.Spans.GitFlowStart).NewCmdObjWithLog("git flow " + branchType + " start " + name),
 					)
 				},
 			})
