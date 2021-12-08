@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
+	"github.com/jesseduffield/lazygit/pkg/commands/oscommands"
 )
 
 // .gitmodules looks like this:
@@ -141,20 +142,20 @@ func (c *GitCommand) SubmoduleUpdate(path string) error {
 	return c.Run(c.NewCmdObj("git submodule update --init -- " + c.OSCommand.Quote(path)))
 }
 
-func (c *GitCommand) SubmoduleBulkInitCmdStr() string {
-	return "git submodule init"
+func (c *GitCommand) SubmoduleBulkInitCmdObj() oscommands.ICmdObj {
+	return c.NewCmdObj("git submodule init")
 }
 
-func (c *GitCommand) SubmoduleBulkUpdateCmdStr() string {
-	return "git submodule update"
+func (c *GitCommand) SubmoduleBulkUpdateCmdObj() oscommands.ICmdObj {
+	return c.NewCmdObj("git submodule update")
 }
 
-func (c *GitCommand) SubmoduleForceBulkUpdateCmdStr() string {
-	return "git submodule update --force"
+func (c *GitCommand) SubmoduleForceBulkUpdateCmdObj() oscommands.ICmdObj {
+	return c.NewCmdObj("git submodule update --force")
 }
 
-func (c *GitCommand) SubmoduleBulkDeinitCmdStr() string {
-	return "git submodule deinit --all --force"
+func (c *GitCommand) SubmoduleBulkDeinitCmdObj() oscommands.ICmdObj {
+	return c.NewCmdObj("git submodule deinit --all --force")
 }
 
 func (c *GitCommand) ResetSubmodules(submodules []*models.SubmoduleConfig) error {

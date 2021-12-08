@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-errors/errors"
 	"github.com/jesseduffield/lazygit/pkg/commands/models"
+	"github.com/jesseduffield/lazygit/pkg/commands/oscommands"
 	"github.com/jesseduffield/lazygit/pkg/gui/filetree"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 )
@@ -23,12 +24,12 @@ func (c *GitCommand) CatFile(fileName string) (string, error) {
 	return string(buf), nil
 }
 
-func (c *GitCommand) OpenMergeToolCmd() string {
-	return "git mergetool"
+func (c *GitCommand) OpenMergeToolCmdObj() oscommands.ICmdObj {
+	return c.NewCmdObj("git mergetool")
 }
 
 func (c *GitCommand) OpenMergeTool() error {
-	return c.OSCommand.RunCommand("git mergetool")
+	return c.Run(c.OpenMergeToolCmdObj())
 }
 
 // StageFile stages a file
@@ -56,7 +57,8 @@ func (c *GitCommand) UnStageFile(fileNames []string, reset bool) error {
 	}
 
 	for _, name := range fileNames {
-		if err := c.OSCommand.RunCommand(command, c.OSCommand.Quote(name)); err != nil {
+		cmdObj := c.NewCmdObj(fmt.Sprintf(command, c.OSCommand.Quote(name)))
+		if err := c.Run(cmdObj); err != nil {
 			return err
 		}
 	}
@@ -197,11 +199,11 @@ func (c *GitCommand) Ignore(filename string) error {
 // WorktreeFileDiff returns the diff of a file
 func (c *GitCommand) WorktreeFileDiff(file *models.File, plain bool, cached bool, ignoreWhitespace bool) string {
 	// for now we assume an error means the file was deleted
-	s, _ := c.OSCommand.RunCommandWithOutput(c.WorktreeFileDiffCmdStr(file, plain, cached, ignoreWhitespace))
+	s, _ := c.OSCommand.RunWithOutput(c.WorktreeFileDiffCmdObj(file, plain, cached, ignoreWhitespace))
 	return s
 }
 
-func (c *GitCommand) WorktreeFileDiffCmdStr(node models.IFile, plain bool, cached bool, ignoreWhitespace bool) string {
+func (c *GitCommand) WorktreeFileDiffCmdObj(node models.IFile, plain bool, cached bool, ignoreWhitespace bool) oscommands.ICmdObj {
 	cachedArg := ""
 	trackedArg := "--"
 	colorArg := c.colorArg()
@@ -221,7 +223,9 @@ func (c *GitCommand) WorktreeFileDiffCmdStr(node models.IFile, plain bool, cache
 		ignoreWhitespaceArg = "--ignore-all-space"
 	}
 
-	return fmt.Sprintf("git diff --submodule --no-ext-diff --unified=%d --color=%s %s %s %s %s", contextSize, colorArg, ignoreWhitespaceArg, cachedArg, trackedArg, quotedPath)
+	cmdStr := fmt.Sprintf("git diff --submodule --no-ext-diff --unified=%d --color=%s %s %s %s %s", contextSize, colorArg, ignoreWhitespaceArg, cachedArg, trackedArg, quotedPath)
+
+	return c.NewCmdObj(cmdStr)
 }
 
 func (c *GitCommand) ApplyPatch(patch string, flags ...string) error {
@@ -346,7 +350,7 @@ func (c *GitCommand) EditFileCmdStr(filename string, lineNumber int) (string, er
 		editor = c.OSCommand.Getenv("EDITOR")
 	}
 	if editor == "" {
-		if err := c.OSCommand.RunCommand("which vi"); err == nil {
+		if err := c.OSCommand.Run(c.NewCmdObj("which vi")); err == nil {
 			editor = "vi"
 		}
 	}

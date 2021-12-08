@@ -427,12 +427,6 @@ func (c *OSCommand) NewShellCmdObjFromString2(command string) ICmdObj {
 
 // runners
 
-// RunCommand runs a command and just returns the error
-func (c *OSCommand) RunCommand(formatString string, formatArgs ...interface{}) error {
-	_, err := c.RunCommandWithOutput(formatString, formatArgs...)
-	return err
-}
-
 // RunCommandWithOutput wrapper around commands returning their output and error
 // NOTE: If you don't pass any formatArgs we'll just use the command directly,
 // however there's a bizarre compiler error/warning when you pass in a formatString
@@ -444,21 +438,22 @@ func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...inte
 	if formatArgs != nil {
 		command = fmt.Sprintf(formatString, formatArgs...)
 	}
-	cmdObj := c.NewCmdObj(command)
-	c.LogCommand(cmdObj.ToString(), true)
-	output, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
-	if err != nil {
-		c.Log.WithField("command", command).Error(output)
-	}
-	return output, err
+
+	return c.RunWithOutput(c.NewCmdObj(command))
 }
 
 func (c *OSCommand) Run(cmdObj ICmdObj) error {
-	return c.Run(c.NewCmdObj(cmdObj.ToString()))
+	_, err := c.RunWithOutput(cmdObj)
+	return err
 }
 
 func (c *OSCommand) RunWithOutput(cmdObj ICmdObj) (string, error) {
-	return c.RunCommandWithOutput(cmdObj.ToString())
+	c.LogCommand(cmdObj.ToString(), true)
+	output, err := sanitisedCommandOutput(cmdObj.GetCmd().CombinedOutput())
+	if err != nil {
+		c.Log.WithField("command", cmdObj.ToString()).Error(output)
+	}
+	return output, err
 }
 
 func sanitisedCommandOutput(output []byte, err error) (string, error) {

@@ -101,5 +101,5 @@ func (c *GitCommand) CherryPickCommits(commits []*models.Commit) error {
 
 // CreateFixupCommit creates a commit that fixes up a previous commit
 func (c *GitCommand) CreateFixupCommit(sha string) error {
-	return c.Run(c.NewCmdObj("git commit --fixup=" + sha))
+	return c.Run(c.NewCmdObj(fmt.Sprintf("git commit --fixup=%s", sha)))
 }

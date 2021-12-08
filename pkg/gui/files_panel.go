@@ -58,8 +58,7 @@ func (gui *Gui) filesRenderToMain() error {
 		return gui.refreshMergePanelWithLock()
 	}
 
-	cmdStr := gui.GitCommand.WorktreeFileDiffCmdStr(node, false, !node.GetHasUnstagedChanges() && node.GetHasStagedChanges(), gui.State.IgnoreWhitespaceInDiffView)
-	cmdObj := gui.OSCommand.NewCmdObj(cmdStr)
+	cmdObj := gui.GitCommand.WorktreeFileDiffCmdObj(node, false, !node.GetHasUnstagedChanges() && node.GetHasStagedChanges(), gui.State.IgnoreWhitespaceInDiffView)
 
 	refreshOpts := refreshMainOpts{main: &viewUpdateOpts{
 		title: gui.Tr.UnstagedChanges,
@@ -68,8 +67,7 @@ func (gui *Gui) filesRenderToMain() error {
 
 	if node.GetHasUnstagedChanges() {
 		if node.GetHasStagedChanges() {
-			cmdStr := gui.GitCommand.WorktreeFileDiffCmdStr(node, false, true, gui.State.IgnoreWhitespaceInDiffView)
-			cmdObj := gui.OSCommand.NewCmdObj(cmdStr)
+			cmdObj := gui.GitCommand.WorktreeFileDiffCmdObj(node, false, true, gui.State.IgnoreWhitespaceInDiffView)
 
 			refreshOpts.secondary = &viewUpdateOpts{
 				title: gui.Tr.StagedChanges,
@@ -980,7 +978,7 @@ func (gui *Gui) handleOpenMergeTool() error {
 		prompt: gui.Tr.MergeToolPrompt,
 		handleConfirm: func() error {
 			return gui.runSubprocessWithSuspenseAndRefresh(
-				gui.OSCommand.NewCmdObj(gui.GitCommand.OpenMergeToolCmd()),
+				gui.GitCommand.OpenMergeToolCmdObj(),
 			)
 		},
 	})
