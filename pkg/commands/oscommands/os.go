@@ -427,21 +427,6 @@ func (c *OSCommand) NewShellCmdObjFromString2(command string) ICmdObj {
 
 // runners
 
-// RunCommandWithOutput wrapper around commands returning their output and error
-// NOTE: If you don't pass any formatArgs we'll just use the command directly,
-// however there's a bizarre compiler error/warning when you pass in a formatString
-// with a percent sign because it thinks it's supposed to be a formatString when
-// in that case it's not. To get around that error you'll need to define the string
-// in a variable and pass the variable into RunCommandWithOutput.
-func (c *OSCommand) RunCommandWithOutput(formatString string, formatArgs ...interface{}) (string, error) {
-	command := formatString
-	if formatArgs != nil {
-		command = fmt.Sprintf(formatString, formatArgs...)
-	}
-
-	return c.RunWithOutput(c.NewCmdObj(command))
-}
-
 func (c *OSCommand) Run(cmdObj ICmdObj) error {
 	_, err := c.RunWithOutput(cmdObj)
 	return err

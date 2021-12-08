@@ -34,10 +34,10 @@ func (c *GitCommand) DetectUnamePass(cmdObj oscommands.ICmdObj, promptUserForCre
 
 // CheckRemoteBranchExists Returns remote branch
 func (c *GitCommand) CheckRemoteBranchExists(branchName string) bool {
-	_, err := c.OSCommand.RunCommandWithOutput(
-		"git show-ref --verify -- refs/remotes/origin/%s",
-		c.OSCommand.Quote(branchName),
-	)
+	_, err := c.RunWithOutput(c.NewCmdObj(
+		fmt.Sprintf("git show-ref --verify -- refs/remotes/origin/%s",
+			c.OSCommand.Quote(branchName),
+		)))
 
 	return err == nil
 }

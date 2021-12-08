@@ -246,11 +246,11 @@ func (c *GitCommand) ApplyPatch(patch string, flags ...string) error {
 // ShowFileDiff get the diff of specified from and to. Typically this will be used for a single commit so it'll be 123abc^..123abc
 // but when we're in diff mode it could be any 'from' to any 'to'. The reverse flag is also here thanks to diff mode.
 func (c *GitCommand) ShowFileDiff(from string, to string, reverse bool, fileName string, plain bool) (string, error) {
-	cmdStr := c.ShowFileDiffCmdStr(from, to, reverse, fileName, plain)
-	return c.OSCommand.RunCommandWithOutput(cmdStr)
+	cmdObj := c.ShowFileDiffCmdObj(from, to, reverse, fileName, plain)
+	return c.RunWithOutput(cmdObj)
 }
 
-func (c *GitCommand) ShowFileDiffCmdStr(from string, to string, reverse bool, fileName string, plain bool) string {
+func (c *GitCommand) ShowFileDiffCmdObj(from string, to string, reverse bool, fileName string, plain bool) oscommands.ICmdObj {
 	colorArg := c.colorArg()
 	contextSize := c.Config.GetUserConfig().Git.DiffContextSize
 	if plain {
@@ -262,7 +262,7 @@ func (c *GitCommand) ShowFileDiffCmdStr(from string, to string, reverse bool, fi
 		reverseFlag = " -R "
 	}
 
-	return fmt.Sprintf("git diff --submodule --no-ext-diff --unified=%d --no-renames --color=%s %s %s %s -- %s", contextSize, colorArg, from, to, reverseFlag, c.OSCommand.Quote(fileName))
+	return c.NewCmdObj(fmt.Sprintf("git diff --submodule --no-ext-diff --unified=%d --no-renames --color=%s %s %s %s -- %s", contextSize, colorArg, from, to, reverseFlag, c.OSCommand.Quote(fileName)))
 }
 
 // CheckoutFile checks out the file for the given commit

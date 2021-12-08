@@ -110,8 +110,8 @@ func TestGitCommandCreateFixupCommit(t *testing.T) {
 	}
 }
 
-// TestGitCommandShowCmdStr is a function.
-func TestGitCommandShowCmdStr(t *testing.T) {
+// TestGitCommandShowCmdObj is a function.
+func TestGitCommandShowCmdObj(t *testing.T) {
 	type scenario struct {
 		testName    string
 		filterPath  string
@@ -145,7 +145,7 @@ func TestGitCommandShowCmdStr(t *testing.T) {
 	for _, s := range scenarios {
 		t.Run(s.testName, func(t *testing.T) {
 			gitCmd.Config.GetUserConfig().Git.DiffContextSize = s.contextSize
-			cmdStr := gitCmd.ShowCmdStr("1234567890", s.filterPath)
+			cmdStr := gitCmd.ShowCmdObj("1234567890", s.filterPath).ToString()
 			assert.Equal(t, s.expected, cmdStr)
 		})
 	}

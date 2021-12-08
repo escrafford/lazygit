@@ -41,20 +41,19 @@ func (c *GitCommand) CommitCmdObj(message string, flags string) oscommands.ICmdO
 
 // Get the subject of the HEAD commit
 func (c *GitCommand) GetHeadCommitMessage() (string, error) {
-	cmdStr := "git log -1 --pretty=%s"
-	message, err := c.OSCommand.RunCommandWithOutput(cmdStr)
+	message, err := c.RunWithOutput(c.NewCmdObj("git log -1 --pretty=%s"))
 	return strings.TrimSpace(message), err
 }
 
 func (c *GitCommand) GetCommitMessage(commitSha string) (string, error) {
 	cmdStr := "git rev-list --format=%B --max-count=1 " + commitSha
-	messageWithHeader, err := c.OSCommand.RunCommandWithOutput(cmdStr)
+	messageWithHeader, err := c.RunWithOutput(c.NewCmdObj(cmdStr))
 	message := strings.Join(strings.SplitAfter(messageWithHeader, "\n")[1:], "\n")
 	return strings.TrimSpace(message), err
 }
 
 func (c *GitCommand) GetCommitMessageFirstLine(sha string) (string, error) {
-	return c.RunCommandWithOutput("git show --no-patch --pretty=format:%%s %s", sha)
+	return c.RunWithOutput(c.NewCmdObj(fmt.Sprintf("git show --no-patch --pretty=format:%%s %s", sha)))
 }
 
 // AmendHead amends HEAD with whatever is staged in your working tree
@@ -66,13 +65,15 @@ func (c *GitCommand) AmendHeadCmdObj() oscommands.ICmdObj {
 	return c.NewCmdObj("git commit --amend --no-edit --allow-empty")
 }
 
-func (c *GitCommand) ShowCmdStr(sha string, filterPath string) string {
+func (c *GitCommand) ShowCmdObj(sha string, filterPath string) oscommands.ICmdObj {
 	contextSize := c.Config.GetUserConfig().Git.DiffContextSize
 	filterPathArg := ""
 	if filterPath != "" {
 		filterPathArg = fmt.Sprintf(" -- %s", c.OSCommand.Quote(filterPath))
 	}
-	return fmt.Sprintf("git show --submodule --color=%s --unified=%d --no-renames --stat -p %s %s", c.colorArg(), contextSize, sha, filterPathArg)
+
+	cmdStr := fmt.Sprintf("git show --submodule --color=%s --unified=%d --no-renames --stat -p %s %s", c.colorArg(), contextSize, sha, filterPathArg)
+	return c.NewCmdObj(cmdStr)
 }
 
 // Revert reverts the selected commit by sha

@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jesseduffield/lazygit/pkg/commands/oscommands"
 	"github.com/jesseduffield/lazygit/pkg/utils"
 )
 
@@ -17,12 +18,12 @@ func (c *GitCommand) NewBranch(name string, base string) error {
 // the first returned string is the name and the second is the displayname
 // e.g. name is 123asdf and displayname is '(HEAD detached at 123asdf)'
 func (c *GitCommand) CurrentBranchName() (string, string, error) {
-	branchName, err := c.RunCommandWithOutput("git symbolic-ref --short HEAD")
+	branchName, err := c.RunWithOutput(c.NewCmdObj("git symbolic-ref --short HEAD"))
 	if err == nil && branchName != "HEAD\n" {
 		trimmedBranchName := strings.TrimSpace(branchName)
 		return trimmedBranchName, trimmedBranchName, nil
 	}
-	output, err := c.RunCommandWithOutput("git branch --contains")
+	output, err := c.RunWithOutput(c.NewCmdObj("git branch --contains"))
 	if err != nil {
 		return "", "", err
 	}
@@ -74,21 +75,20 @@ func (c *GitCommand) Checkout(branch string, options CheckoutOptions) error {
 // Currently it limits the result to 100 commits, but when we get async stuff
 // working we can do lazy loading
 func (c *GitCommand) GetBranchGraph(branchName string) (string, error) {
-	cmdStr := c.GetBranchGraphCmdStr(branchName)
-	return c.OSCommand.RunCommandWithOutput(cmdStr)
+	return c.OSCommand.RunWithOutput(c.GetBranchGraphCmdObj(branchName))
 }
 
 func (c *GitCommand) GetUpstreamForBranch(branchName string) (string, error) {
-	output, err := c.RunCommandWithOutput("git rev-parse --abbrev-ref --symbolic-full-name %s@{u}", c.OSCommand.Quote(branchName))
+	output, err := c.RunWithOutput(c.NewCmdObj(fmt.Sprintf("git rev-parse --abbrev-ref --symbolic-full-name %s@{u}", c.OSCommand.Quote(branchName))))
 	return strings.TrimSpace(output), err
 }
 
-func (c *GitCommand) GetBranchGraphCmdStr(branchName string) string {
+func (c *GitCommand) GetBranchGraphCmdObj(branchName string) oscommands.ICmdObj {
 	branchLogCmdTemplate := c.Config.GetUserConfig().Git.BranchLogCmd
 	templateValues := map[string]string{
 		"branchName": c.OSCommand.Quote(branchName),
 	}
-	return utils.ResolvePlaceholderString(branchLogCmdTemplate, templateValues)
+	return c.NewCmdObj(utils.ResolvePlaceholderString(branchLogCmdTemplate, templateValues))
 }
 
 func (c *GitCommand) SetUpstreamBranch(upstream string) error {
@@ -111,11 +111,11 @@ func (c *GitCommand) GetBranchUpstreamDifferenceCount(branchName string) (string
 // current branch
 func (c *GitCommand) GetCommitDifferences(from, to string) (string, string) {
 	command := "git rev-list %s..%s --count"
-	pushableCount, err := c.OSCommand.RunCommandWithOutput(command, to, from)
+	pushableCount, err := c.RunWithOutput(c.NewCmdObj(fmt.Sprintf(command, to, from)))
 	if err != nil {
 		return "?", "?"
 	}
-	pullableCount, err := c.OSCommand.RunCommandWithOutput(command, from, to)
+	pullableCount, err := c.RunWithOutput(c.NewCmdObj(fmt.Sprintf(command, from, to)))
 	if err != nil {
 		return "?", "?"
 	}

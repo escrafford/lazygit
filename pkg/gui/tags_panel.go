@@ -46,9 +46,7 @@ func (gui *Gui) tagsRenderToMain() error {
 	if tag == nil {
 		task = NewRenderStringTask("No tags")
 	} else {
-		cmdObj := gui.OSCommand.NewCmdObj(
-			gui.GitCommand.GetBranchGraphCmdStr(tag.Name),
-		)
+		cmdObj := gui.GitCommand.GetBranchGraphCmdObj(tag.Name)
 		task = NewRunCommandTask(cmdObj.GetCmd())
 	}
 

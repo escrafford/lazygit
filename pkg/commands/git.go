@@ -226,28 +226,19 @@ func VerifyInGitRepo(osCommand *oscommands.OSCommand) error {
 	return osCommand.Run(osCommand.NewCmdObj("git rev-parse --git-dir"))
 }
 
-func (c *GitCommand) RunCommand(formatString string, formatArgs ...interface{}) error {
-	_, err := c.RunCommandWithOutput(formatString, formatArgs...)
-	return err
-}
-
 func (c *GitCommand) Run(cmdObj oscommands.ICmdObj) error {
 	_, err := c.RunWithOutput(cmdObj)
 	return err
 }
 
 func (c *GitCommand) RunWithOutput(cmdObj oscommands.ICmdObj) (string, error) {
-	return c.RunCommandWithOutput(cmdObj.ToString())
-}
-
-func (c *GitCommand) RunCommandWithOutput(formatString string, formatArgs ...interface{}) (string, error) {
 	// TODO: have this retry logic in other places we run the command
 	waitTime := 50 * time.Millisecond
 	retryCount := 5
 	attempt := 0
 
 	for {
-		output, err := c.OSCommand.RunCommandWithOutput(formatString, formatArgs...)
+		output, err := c.OSCommand.RunWithOutput(cmdObj)
 		if err != nil {
 			// if we have an error based on the index lock, we should wait a bit and then retry
 			if strings.Contains(output, ".git/index.lock") {
